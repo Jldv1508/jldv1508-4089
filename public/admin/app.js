@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'jldv1508RenameItemsV7';
+const STORAGE_KEY = 'jldv1508RenameItemsV8';
 const TABLES_KEY = 'jldv1508CodeTablesV1';
 let items = hydrateItems(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || window.INITIAL_ITEMS);
 let tables = hydrateTables(JSON.parse(localStorage.getItem(TABLES_KEY) || 'null') || window.CODE_TABLES);
@@ -117,7 +117,7 @@ function renumberAll() {
   items.forEach(item => {
     const key = `${item.type}-${item.material}-${item.color}`;
     counters[key] = (counters[key] || 0) + 1;
-    item.unit = String(counters[key]).padStart(2, '0');
+    item.unit = String(counters[key]).padStart(3, '0');
   });
 }
 function initBulkEditor() {
@@ -299,7 +299,7 @@ function render() {
         <div class="field"><label>Tipo</label><select data-field="type">${options(tables.types, item.type)}</select></div>
         <div class="field"><label>Material</label><select data-field="material">${options(tables.materials, item.material)}</select></div>
         <div class="field"><label>Color</label><select data-field="color">${options(tables.colors, item.color)}</select></div>
-        <div class="field"><label>Unidad</label><input data-field="unit" value="${escapeAttr(item.unit)}" maxlength="2"></div>
+        <div class="field"><label>Unidad</label><input data-field="unit" value="${escapeAttr(item.unit)}" maxlength="3"></div>
         <div class="field"><label>Precio €</label><input data-field="price" inputmode="decimal" placeholder="0,00" value="${escapeAttr(item.price || '')}"></div>
         <div class="field"><label>Stock</label><input data-field="stock" inputmode="numeric" placeholder="Cantidad" value="${escapeAttr(item.stock || '')}"></div>
         <div class="field"><label>Medidas</label><input data-field="measures" placeholder="Ej. 18 cm / talla 12" value="${escapeAttr(item.measures || '')}"></div>
@@ -320,7 +320,7 @@ function render() {
     card.querySelectorAll('[data-field]').forEach(input => {
       input.addEventListener('input', () => {
         const field = input.dataset.field;
-        items[index][field] = field === 'unit' ? input.value.replace(/\D/g, '').padStart(2, '0').slice(-2) : field === 'stock' ? input.value.replace(/\D/g, '') : input.value;
+        items[index][field] = field === 'unit' ? input.value.replace(/\D/g, '').padStart(3, '0').slice(-3) : field === 'stock' ? input.value.replace(/\D/g, '') : input.value;
         if (field === 'price') {
           card.querySelector('.price-display').textContent = formatPrice(items[index].price);
         }
