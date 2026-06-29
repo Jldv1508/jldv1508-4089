@@ -23,35 +23,22 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
 }
 
-window.setProductImage = function(cardId, src, button) {
-  const img = document.querySelector(`[data-card-image="${cardId}"]`);
-  if (!img) return;
-  img.src = src;
-  button.parentElement.querySelectorAll('button').forEach(item => item.classList.remove('active'));
-  button.classList.add('active');
-};
-
-function renderImages(item, cardId) {
+function imageCards(item) {
   const images = item.imagenes?.length ? item.imagenes : [item.archivo].filter(Boolean);
-  const first = images[0] || '';
-  const thumbs = images.length > 1 ? `<div class="thumbs">${images.map((src, index) => `<button class="${index === 0 ? 'active' : ''}" type="button" onclick="setProductImage('${cardId}', '${src}', this)"><img src="${src}" alt="${escapeHtml(item.codigo)} foto ${index + 1}" loading="lazy"></button>`).join('')}</div>` : '';
-  return `<div class="image"><img data-card-image="${cardId}" src="${first}" alt="${escapeHtml(item.codigo)}" loading="lazy"></div>${thumbs}`;
+  return images.map((src, index) => ({ ...item, src, imageIndex: index + 1 }));
 }
 
 function render() {
   const query = search.value.trim().toLowerCase();
-  const rows = catalog.filter(item =>
+  const rows = catalog.flatMap(imageCards).filter(item =>
     (!type.value || item.tipo === type.value) &&
     (!material.value || item.material === material.value) &&
     (!color.value || item.color === color.value) &&
     (!query || JSON.stringify(item).toLowerCase().includes(query))
   );
-  grid.innerHTML = rows.length ? rows.map((item, index) => {
-    const cardId = `card-${index}`;
-    return `<article class="card type-${item.tipo}">
-      ${renderImages(item, cardId)}
-    </article>`;
-  }).join('') : `<section class="empty-state"><strong>Catalogo en blanco</strong><span>Estamos preparando una nueva seleccion de piezas.</span></section>`;
+  grid.innerHTML = rows.length ? rows.map(item => `<article class="card type-${item.tipo}">
+    <div class="image"><img src="${item.src}" alt="${escapeHtml(item.codigo)} foto ${item.imageIndex}" loading="lazy"></div>
+  </article>`).join('') : `<section class="empty-state"><strong>Catalogo en blanco</strong><span>Estamos preparando una nueva seleccion de piezas.</span></section>`;
 }
 
 optionize(type, TYPE);
