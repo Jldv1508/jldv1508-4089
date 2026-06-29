@@ -23,21 +23,16 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
 }
 
-function imageCards(item) {
-  const images = item.imagenes?.length ? item.imagenes : [item.archivo].filter(Boolean);
-  return images.map((src, index) => ({ ...item, src, imageIndex: index + 1 }));
-}
-
 function render() {
   const query = search.value.trim().toLowerCase();
-  const rows = catalog.flatMap(imageCards).filter(item =>
+  const rows = catalog.filter(item =>
     (!type.value || item.tipo === type.value) &&
     (!material.value || item.material === material.value) &&
     (!color.value || item.color === color.value) &&
     (!query || JSON.stringify(item).toLowerCase().includes(query))
   );
   grid.innerHTML = rows.length ? rows.map(item => `<article class="card type-${item.tipo}">
-    <div class="image"><img src="${item.src}" alt="${escapeHtml(item.codigo)} foto ${item.imageIndex}" loading="lazy"></div>
+    <div class="image"><img src="${item.archivo}" alt="${escapeHtml(item.codigo)}" loading="lazy"></div>
   </article>`).join('') : `<section class="empty-state"><strong>Catalogo en blanco</strong><span>Estamos preparando una nueva seleccion de piezas.</span></section>`;
 }
 
@@ -45,7 +40,7 @@ optionize(type, TYPE);
 optionize(material, MATERIAL);
 optionize(color, COLOR);
 [search, type, material, color].forEach(element => element.addEventListener('input', render));
-fetch('catalogo.json').then(response => response.json()).then(data => {
+fetch('catalogo-fotos.json?v=742-20260630').then(response => response.json()).then(data => {
   catalog = data;
   render();
 });
