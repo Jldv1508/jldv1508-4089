@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'jldv1508RenameItemsV6';
+const STORAGE_KEY = 'jldv1508RenameItemsV7';
 const TABLES_KEY = 'jldv1508CodeTablesV1';
 let items = hydrateItems(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || window.INITIAL_ITEMS);
 let tables = hydrateTables(JSON.parse(localStorage.getItem(TABLES_KEY) || 'null') || window.CODE_TABLES);
@@ -16,7 +16,7 @@ function code(item) {
   return `${item.type}-${item.material}-${item.color}-${item.unit}`;
 }
 function newName(item) {
-  const outputExtension = item.transparent || String(item.image || '').toLowerCase().endsWith('.png') ? '.png' : ext(item.original);
+  const outputExtension = item.transparent ? ext(item.transparent) : String(item.image || '').toLowerCase().endsWith('.webp') ? '.webp' : ext(item.original);
   return `${code(item)}${outputExtension}`;
 }
 function initialImageFor(item) {
@@ -78,7 +78,7 @@ function hydrateItems(source) {
     stock: normalizeStock(item.stock),
     measures: item.measures || item.medidas || '',
     status: item.status || item.estado || 'disponible',
-    description: '',
+    description: item.description || '',
   }));
 }
 function normalizeStock(value) {
@@ -290,7 +290,7 @@ function render() {
       <div class="original">${escapeHtml(item.original)}</div>
       <div class="code">${escapeHtml(code(item))}</div>
       <div class="descriptor">${escapeHtml(tableLabel(tables.types, item.type))} · ${escapeHtml(tableLabel(tables.materials, item.material))} · ${escapeHtml(item.color)} ${escapeHtml(tableLabel(tables.colors, item.color))}</div>
-      ${item.referenceCsv || item.idf ? `<div class="csv-ref">${escapeHtml(item.referenceCsv || '')}${item.idf ? ` · ${escapeHtml(item.idf)}` : ''}</div>` : ''}
+      ${item.referenceCsv || item.idf ? `<div class="csv-ref">${escapeHtml(item.referenceCsv || '')}${item.idf ? ` · ${escapeHtml(item.idf)}` : ''}${item.imageCount ? ` · ${escapeHtml(item.imageCount)} fotos` : ''}</div>` : ''}
       ${item.description ? `<div class="description">${escapeHtml(item.description)}</div>` : ''}
       ${qualityIssues(item).length ? `<div class="quality-warning">${qualityIssues(item).map(issue => issue === 'posible_desenfoque' ? 'Posible desenfoque' : 'Relleno central').join(' · ')}</div>` : ''}
       <div class="price-display">${escapeHtml(formatPrice(item.price))}</div>
