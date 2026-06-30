@@ -67,6 +67,38 @@ function parseStoredJson(key) {
     return null;
   }
 }
+function storedCandidates() {
+  const rows = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key || !key.toLowerCase().includes('jldv1508')) continue;
+    const value = parseStoredJson(key);
+    const list = listFromBackup(value);
+    if (!list?.length) continue;
+    const edited = hasCardEdits(list, window.INITIAL_ITEMS);
+    const matching = list.filter(item => window.INITIAL_ITEMS?.some(initial => initial.original === item.original)).length;
+    rows.push({
+      key,
+      value,
+      count: list.length,
+      edited,
+      matching,
+      createdAt: value?.createdAt || '',
+    });
+  }
+  return rows.sort((a, b) => Number(b.edited) - Number(a.edited) || b.matching - a.matching || b.count - a.count);
+}
+function restoreBackupObject(backup) {
+  const restoredItems = listFromBackup(backup);
+  if (!restoredItems?.length) throw new Error('No hay tarjetas para restaurar.');
+  items = hydrateItems(mergeWithInitial(restoredItems, window.INITIAL_ITEMS));
+  tables = hydrateTables(backup.tables || tables);
+  previewImages.forEach(url => URL.revokeObjectURL(url));
+  previewImages.clear();
+  selected.clear();
+  save();
+  refreshCodeEditors();
+}
 function loadStoredObject(key, legacyKeys, fallback) {
   const current = parseStoredJson(key);
   if (current) return current;
@@ -687,13 +719,7 @@ document.getElementById('restoreJsonInput')?.addEventListener('change', event =>
       const restoredItems = listFromBackup(backup);
       if (!restoredItems?.length) throw new Error('El archivo no contiene tarjetas.');
       if (!confirm(`Restaurar ${restoredItems.length} tarjeta(s) desde este respaldo?`)) return;
-      items = hydrateItems(mergeWithInitial(restoredItems, window.INITIAL_ITEMS));
-      tables = hydrateTables(backup.tables || tables);
-      previewImages.forEach(url => URL.revokeObjectURL(url));
-      previewImages.clear();
-      selected.clear();
-      save();
-      refreshCodeEditors();
+      restoreBackupObject(backup);
       alert('Respaldo restaurado.');
     } catch (error) {
       alert(`No se pudo restaurar el respaldo: ${error.message}`);
@@ -711,11 +737,30 @@ document.getElementById('restoreLastBackupBtn')?.addEventListener('click', () =>
     return;
   }
   if (!confirm(`Restaurar el ultimo respaldo automatico con ${restoredItems.length} tarjeta(s)?`)) return;
-  items = hydrateItems(mergeWithInitial(restoredItems, window.INITIAL_ITEMS));
-  tables = hydrateTables(backup.tables || tables);
-  selected.clear();
-  save();
-  refreshCodeEditors();
+  restoreBackupObject(backup);
+});
+document.getElementById('recoverDataBtn')?.addEventListener('click', () => {
+  const candidates = storedCandidates();
+  if (!candidates.length) {
+    alert('No encuentro copias guardadas de jldv1508 en este navegador. Si trabajaste en otro dominio o navegador, abre ese mismo sitio o importa un respaldo descargado.');
+    return;
+  }
+  const summary = candidates.slice(0, 8).map((candidate, index) => {
+    const edited = candidate.edited ? 'con cambios' : 'sin cambios claros';
+    const date = candidate.createdAt ? ` · ${candidate.createdAt}` : '';
+    return `${index + 1}. ${candidate.key} · ${candidate.count} tarjetas · ${candidate.matching} coinciden · ${edited}${date}`;
+  }).join('\n');
+  const answer = prompt(`Copias encontradas:\n\n${summary}\n\nEscribe el numero que quieres restaurar.`, '1');
+  if (answer === null) return;
+  const index = Number(answer) - 1;
+  const chosen = candidates[index];
+  if (!chosen) {
+    alert('Numero no valido.');
+    return;
+  }
+  if (!confirm(`Restaurar "${chosen.key}" con ${chosen.count} tarjeta(s)?`)) return;
+  restoreBackupObject(chosen.value);
+  alert('Datos recuperados.');
 });
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
