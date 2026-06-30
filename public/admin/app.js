@@ -357,20 +357,16 @@ function render() {
     <label class="select-card"><input type="checkbox" data-select onchange="toggleCardSelection(${index}, this.checked)" ${selected.has(index) ? 'checked' : ''}> Elegir</label>
     <img src="${imageSrc(item, index)}" alt="${escapeHtml(item.original)}">
     <div class="body">
-      <div class="original">${escapeHtml(item.original)}</div>
       <div class="code">${escapeHtml(code(item))}</div>
       <div class="descriptor">${escapeHtml(tableLabel(tables.types, item.type))} · ${escapeHtml(tableLabel(tables.materials, item.material))} · ${escapeHtml(item.color)} ${escapeHtml(tableLabel(tables.colors, item.color))}</div>
       ${qualityIssues(item).length ? `<div class="quality-warning">${qualityIssues(item).map(issue => issue === 'posible_desenfoque' ? 'Posible desenfoque' : 'Relleno central').join(' · ')}</div>` : ''}
-      <div class="price-display">${escapeHtml(formatPrice(item.price))}</div>
       <div class="fields">
-        <div class="field full"><label>Nombre comercial</label><input data-field="productName" value="${escapeAttr(item.productName || '')}" placeholder="Nombre para tienda"></div>
         <div class="field"><label>Tipo</label><select data-field="type">${options(tables.types, item.type)}</select></div>
         <div class="field"><label>Material</label><select data-field="material">${options(tables.materials, item.material)}</select></div>
         <div class="field"><label>Color</label><select data-field="color">${options(tables.colors, item.color)}</select></div>
         <div class="field"><label>Unidad</label><input data-field="unit" value="${escapeAttr(item.unit)}" maxlength="3"></div>
         <div class="field"><label>Precio €</label><input data-field="price" inputmode="decimal" placeholder="0,00" value="${escapeAttr(item.price || '')}"></div>
         <div class="field"><label>Stock</label><input data-field="stock" inputmode="numeric" placeholder="Cantidad" value="${escapeAttr(item.stock || '')}"></div>
-        <div class="field"><label>Medidas</label><input data-field="measures" placeholder="Ej. 18 cm / talla 12" value="${escapeAttr(item.measures || '')}"></div>
         <div class="field full"><label>Foto nueva</label><input type="file" accept="image/*" data-replace-image onchange="replaceCardImage(${index}, this)">${item.replacementFileName ? `<span class="replacement-note">Nueva foto pendiente de subir: ${escapeHtml(item.replacementFileName)}</span>` : ''}</div>
         <div class="field full"><label>Estado</label><select data-field="status">
           <option value="disponible" ${item.status === 'disponible' ? 'selected' : ''}>Disponible</option>
@@ -389,9 +385,6 @@ function render() {
       input.addEventListener('input', () => {
         const field = input.dataset.field;
         items[index][field] = field === 'unit' ? input.value.replace(/\D/g, '').padStart(3, '0').slice(-3) : field === 'stock' ? input.value.replace(/\D/g, '') : input.value;
-        if (field === 'price') {
-          card.querySelector('.price-display').textContent = formatPrice(items[index].price);
-        }
         card.querySelector('.code').textContent = code(items[index]);
         if (field === 'type') {
           card.className = `card ${typeClass(items[index].type)} ${selected.has(index) ? 'selected' : ''}`;
@@ -402,9 +395,6 @@ function render() {
         items[index][field] = field === 'price' ? normalizePrice(input.value) : field === 'stock' ? normalizeStock(input.value) : input.value;
         if (field === 'price') input.value = items[index][field];
         if (field === 'stock') input.value = items[index][field];
-        if (field === 'price') {
-          card.querySelector('.price-display').textContent = formatPrice(items[index].price);
-        }
         card.querySelector('.code').textContent = code(items[index]);
         if (field === 'type') {
           card.className = `card ${typeClass(items[index].type)} ${selected.has(index) ? 'selected' : ''}`;
@@ -414,7 +404,6 @@ function render() {
         if (input.dataset.field !== 'price') return;
         items[index].price = normalizePrice(input.value);
         input.value = items[index].price;
-        card.querySelector('.price-display').textContent = formatPrice(items[index].price);
       });
     });
   });
