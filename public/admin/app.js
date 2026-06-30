@@ -15,6 +15,10 @@ const selected = new Set();
 const previewImages = new Map();
 let qualityByOriginal = {};
 let qualityByCode = {};
+let lastSelectedIndex = null;
+let draggedIndex = null;
+let compactView = parseStoredJson(`${STORAGE_KEY}:vista-compacta`) === true;
+if (compactView) document.body.classList.add('fast-select');
 
 function ext(name) {
   const i = name.lastIndexOf('.');
@@ -122,7 +126,13 @@ function mergeWithInitial(saved, initial) {
   const savedByOriginal = new Map(savedList.map(item => [item.original, item]));
   const merged = (initial || []).map(initialItem => {
     const savedItem = savedByOriginal.get(initialItem.original);
-    return savedItem ? { ...initialItem, ...savedItem, image: savedItem.image || initialItem.image, images: savedItem.images?.length ? savedItem.images : initialItem.images } : initialItem;
+    return savedItem ? {
+      ...initialItem,
+      ...savedItem,
+      image: initialItem.image || savedItem.image,
+      images: initialItem.images?.length ? initialItem.images : savedItem.images,
+      transparent: initialItem.transparent || savedItem.transparent,
+    } : initialItem;
   });
   const initialOriginals = new Set((initial || []).map(item => item.original));
   savedList.forEach(item => {
@@ -269,6 +279,8 @@ function updateFilterSummary(boxId, selected) {
 }
 function updateSelectedCount() {
   document.getElementById('selectedCount').textContent = `${selected.size} seleccionada${selected.size === 1 ? '' : 's'}`;
+  const fastViewBtn = document.getElementById('fastViewBtn');
+  if (fastViewBtn) fastViewBtn.textContent = compactView ? 'Vista completa' : 'Vista rapida';
 }
 function renumberAll() {
   const counters = {};
@@ -400,9 +412,34 @@ function filteredEntries() {
     return [item.original, newName(item), item.productName, item.notes, item.measures, item.type, item.material, item.color].join(' ').toLowerCase().includes(query);
   });
 }
-window.toggleCardSelection = function(index, checked) {
+function selectRange(fromIndex, toIndex, checked = true) {
+  const visible = filteredEntries().map(entry => entry.index);
+  const fromPosition = visible.indexOf(fromIndex);
+  const toPosition = visible.indexOf(toIndex);
+  if (fromPosition < 0 || toPosition < 0) return false;
+  const start = Math.min(fromPosition, toPosition);
+  const end = Math.max(fromPosition, toPosition);
+  visible.slice(start, end + 1).forEach(index => {
+    checked ? selected.add(index) : selected.delete(index);
+  });
+  return true;
+}
+function setCardSelection(index, checked, event) {
+  if (event?.shiftKey && lastSelectedIndex !== null && selectRange(lastSelectedIndex, index, checked)) {
+    lastSelectedIndex = index;
+    render();
+    return;
+  }
   checked ? selected.add(index) : selected.delete(index);
+  lastSelectedIndex = index;
   render();
+}
+window.toggleCardSelection = function(index, checked, event) {
+  setCardSelection(index, checked, event);
+};
+window.quickSelectCard = function(index, event) {
+  event?.preventDefault();
+  setCardSelection(index, !selected.has(index), event);
 };
 window.selectAllCards = function() {
   filteredEntries().forEach(({ index }) => selected.add(index));
@@ -416,7 +453,55 @@ window.invertVisibleSelection = function() {
 };
 window.clearCardSelection = function() {
   selected.clear();
+  lastSelectedIndex = null;
   render();
+};
+window.toggleFastSelectView = function() {
+  compactView = !compactView;
+  document.body.classList.toggle('fast-select', compactView);
+  localStorage.setItem(`${STORAGE_KEY}:vista-compacta`, JSON.stringify(compactView));
+  updateSelectedCount();
+};
+function restoreSelectionByOriginal(selectedOriginals) {
+  selected.clear();
+  items.forEach((item, index) => {
+    if (selectedOriginals.has(item.original)) selected.add(index);
+  });
+}
+function moveCard(fromIndex, toIndex) {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) return;
+  const selectedOriginals = new Set([...selected].map(index => items[index]?.original).filter(Boolean));
+  const [moved] = items.splice(fromIndex, 1);
+  items.splice(toIndex, 0, moved);
+  restoreSelectionByOriginal(selectedOriginals);
+  lastSelectedIndex = null;
+  save();
+  render();
+}
+window.moveCardByOffset = function(index, offset) {
+  moveCard(index, Math.max(0, Math.min(items.length - 1, index + offset)));
+};
+window.startCardDrag = function(index, event) {
+  draggedIndex = index;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(index));
+};
+window.dragOverCard = function(index, event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.card.drag-over').forEach(card => card.classList.remove('drag-over'));
+  document.querySelector(`.card[data-index="${index}"]`)?.classList.add('drag-over');
+};
+window.dropCard = function(index, event) {
+  event.preventDefault();
+  document.querySelectorAll('.card.drag-over').forEach(card => card.classList.remove('drag-over'));
+  const fromIndex = draggedIndex ?? Number(event.dataTransfer.getData('text/plain'));
+  draggedIndex = null;
+  moveCard(fromIndex, index);
+};
+window.endCardDrag = function() {
+  draggedIndex = null;
+  document.querySelectorAll('.card.drag-over').forEach(card => card.classList.remove('drag-over'));
 };
 window.applyBulkChanges = function() {
   if (!selected.size) {
@@ -492,9 +577,12 @@ function render() {
     if (visibleCount) visibleCount.textContent = '0 visibles';
     return;
   }
-  grid.innerHTML = entries.map(({ item, index }) => `<article class="card ${escapeAttr(typeClass(item.type))} ${selected.has(index) ? 'selected' : ''}" data-index="${index}">
-    <label class="select-card"><input type="checkbox" data-select onchange="toggleCardSelection(${index}, this.checked)" ${selected.has(index) ? 'checked' : ''}> Elegir</label>
-    <img src="${imageSrc(item, index)}" alt="${escapeHtml(item.original)}" style="${imageStyle(item)}">
+  grid.innerHTML = entries.map(({ item, index }) => `<article class="card ${escapeAttr(typeClass(item.type))} ${selected.has(index) ? 'selected' : ''}" data-index="${index}" ondragover="dragOverCard(${index}, event)" ondrop="dropCard(${index}, event)">
+    <label class="select-card"><input type="checkbox" data-select onchange="toggleCardSelection(${index}, this.checked, event)" ${selected.has(index) ? 'checked' : ''}> <span>Elegir</span></label>
+    <button class="drag-card" type="button" draggable="true" ondragstart="startCardDrag(${index}, event)" ondragend="endCardDrag()" aria-label="Arrastrar ${escapeAttr(item.original)}">Mover</button>
+    <button class="image-picker" type="button" onclick="quickSelectCard(${index}, event)" aria-label="Seleccionar ${escapeAttr(item.original)}">
+      <img src="${imageSrc(item, index)}" alt="${escapeHtml(item.original)}" style="${imageStyle(item)}">
+    </button>
     <div class="body">
       <div class="code">${escapeHtml(code(item))}</div>
       <div class="descriptor">${escapeHtml(tableLabel(tables.types, item.type))} · ${escapeHtml(tableLabel(tables.materials, item.material))} · ${escapeHtml(item.color)} ${escapeHtml(tableLabel(tables.colors, item.color))}</div>
@@ -517,6 +605,10 @@ function render() {
           <option value="oculto" ${item.status === 'oculto' ? 'selected' : ''}>Oculto</option>
         </select></div>
         <div class="field full"><label>Notas</label><textarea data-field="notes">${escapeHtml(item.notes || '')}</textarea></div>
+      </div>
+      <div class="order-actions">
+        <button type="button" onclick="moveCardByOffset(${index}, -1)" ${index === 0 ? 'disabled' : ''}>Subir</button>
+        <button type="button" onclick="moveCardByOffset(${index}, 1)" ${index === items.length - 1 ? 'disabled' : ''}>Bajar</button>
       </div>
       <button class="delete-card" type="button" onclick="deleteCard(${index})">Eliminar de la lista</button>
     </div>

@@ -4,7 +4,7 @@ export const config = {
   matcher: ['/admin/:path*'],
 };
 
-export function middleware(request) {
+export function proxy(request) {
   const user = process.env.ADMIN_USER || 'admin';
   const password = process.env.ADMIN_PASSWORD;
 
