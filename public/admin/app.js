@@ -10,6 +10,11 @@ const selected = new Set();
 const previewImages = new Map();
 let qualityByOriginal = {};
 let qualityByCode = {};
+const TYPE_CORRECTIONS = {
+  accesorio_001: { from: 'ACC', to: 'PEN' },
+  conjunto_0011: { from: 'CON', to: 'COL' },
+  pin_0011: { from: 'PIN', to: 'COL' },
+};
 
 function ext(name) {
   const i = name.lastIndexOf('.');
@@ -168,6 +173,7 @@ function defaultDescription(item) {
 function hydrateItems(source) {
   return (source || []).map(item => ({
     ...item,
+    type: correctedType(item),
     image: persistedImageFor(item),
     productName: item.productName || item.nombre || '',
     price: normalizePrice(item.price),
@@ -179,6 +185,11 @@ function hydrateItems(source) {
     imageY: imageNumber(item.imageY ?? item.image_y, 50, 0, 100),
     imageZoom: imageNumber(item.imageZoom ?? item.image_zoom, 1, .7, 2.2),
   }));
+}
+function correctedType(item) {
+  const key = Object.keys(TYPE_CORRECTIONS).find(prefix => String(item.original || item.idf || '').startsWith(prefix));
+  const correction = key ? TYPE_CORRECTIONS[key] : null;
+  return correction && item.type === correction.from ? correction.to : item.type;
 }
 function normalizeStock(value) {
   const number = Number(String(value ?? '').replace(/\D/g, ''));

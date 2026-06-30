@@ -16450,7 +16450,7 @@
     "idf": "accesorio_001",
     "archivo": "imagenes/lote-003/238-accesorio_001-BISU-ACC-002-M05C05P05-01.webp",
     "nombre_comercial": "",
-    "tipo": "ACC",
+    "tipo": "PEN",
     "material": "005",
     "material_nombre": "Acero inoxidable",
     "color": "005",
@@ -16465,7 +16465,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-ACC-002-M05C05P05",
     "foto_numero": 1,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Pendiente"
   },
   {
     "codigo": "BISU-ACC-002-M05C05P05-02",
@@ -16473,7 +16474,7 @@
     "idf": "accesorio_001",
     "archivo": "imagenes/lote-003/238-accesorio_001-BISU-ACC-002-M05C05P05-02.webp",
     "nombre_comercial": "",
-    "tipo": "ACC",
+    "tipo": "PEN",
     "material": "005",
     "material_nombre": "Acero inoxidable",
     "color": "005",
@@ -16488,7 +16489,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-ACC-002-M05C05P05",
     "foto_numero": 2,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Pendiente"
   },
   {
     "codigo": "BISU-ACC-002-M05C05P05-03",
@@ -16496,7 +16498,7 @@
     "idf": "accesorio_001",
     "archivo": "imagenes/lote-003/238-accesorio_001-BISU-ACC-002-M05C05P05-03.webp",
     "nombre_comercial": "",
-    "tipo": "ACC",
+    "tipo": "PEN",
     "material": "005",
     "material_nombre": "Acero inoxidable",
     "color": "005",
@@ -16511,7 +16513,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-ACC-002-M05C05P05",
     "foto_numero": 3,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Pendiente"
   },
   {
     "codigo": "BISU-ANI-002-M01C02P05-01",
@@ -16933,7 +16936,7 @@
     "idf": "conjunto_0011",
     "archivo": "imagenes/lote-004/245-conjunto_0011-BISU-CON-00-01.webp",
     "nombre_comercial": "",
-    "tipo": "CON",
+    "tipo": "COL",
     "material": "999",
     "material_nombre": "Pendiente de clasificar",
     "color": "999",
@@ -16948,7 +16951,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-CON-00-",
     "foto_numero": 1,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Collar"
   },
   {
     "codigo": "BISU-CON-00--02",
@@ -16956,7 +16960,7 @@
     "idf": "conjunto_0011",
     "archivo": "imagenes/lote-004/245-conjunto_0011-BISU-CON-00-02.webp",
     "nombre_comercial": "",
-    "tipo": "CON",
+    "tipo": "COL",
     "material": "999",
     "material_nombre": "Pendiente de clasificar",
     "color": "999",
@@ -16971,7 +16975,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-CON-00-",
     "foto_numero": 2,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Collar"
   },
   {
     "codigo": "BISU-CON-00--03",
@@ -16979,7 +16984,7 @@
     "idf": "conjunto_0011",
     "archivo": "imagenes/lote-004/245-conjunto_0011-BISU-CON-00-03.webp",
     "nombre_comercial": "",
-    "tipo": "CON",
+    "tipo": "COL",
     "material": "999",
     "material_nombre": "Pendiente de clasificar",
     "color": "999",
@@ -16994,7 +16999,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-CON-00-",
     "foto_numero": 3,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Collar"
   },
   {
     "codigo": "BISU-PIN-00--01",
@@ -17002,7 +17008,7 @@
     "idf": "pin_0011",
     "archivo": "imagenes/lote-004/246-pin_0011-BISU-PIN-00-01.webp",
     "nombre_comercial": "",
-    "tipo": "PIN",
+    "tipo": "COL",
     "material": "999",
     "material_nombre": "Pendiente de clasificar",
     "color": "999",
@@ -17017,7 +17023,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-PIN-00-",
     "foto_numero": 1,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Collar"
   },
   {
     "codigo": "BISU-PIN-00--02",
@@ -17025,7 +17032,7 @@
     "idf": "pin_0011",
     "archivo": "imagenes/lote-004/246-pin_0011-BISU-PIN-00-02.webp",
     "nombre_comercial": "",
-    "tipo": "PIN",
+    "tipo": "COL",
     "material": "999",
     "material_nombre": "Pendiente de clasificar",
     "color": "999",
@@ -17040,7 +17047,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-PIN-00-",
     "foto_numero": 2,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Collar"
   },
   {
     "codigo": "BISU-PIN-00--03",
@@ -17048,7 +17056,7 @@
     "idf": "pin_0011",
     "archivo": "imagenes/lote-004/246-pin_0011-BISU-PIN-00-03.webp",
     "nombre_comercial": "",
-    "tipo": "PIN",
+    "tipo": "COL",
     "material": "999",
     "material_nombre": "Pendiente de clasificar",
     "color": "999",
@@ -17063,7 +17071,8 @@
     "fotos": 3,
     "codigo_producto": "BISU-PIN-00-",
     "foto_numero": 3,
-    "fotos_producto": 3
+    "fotos_producto": 3,
+    "tipo_nombre": "Collar"
   },
   {
     "codigo": "BISU-PEN-1A1-M9C2P5-743",
