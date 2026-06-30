@@ -31,6 +31,17 @@ function persistedImageFor(item) {
 function imageSrc(item, index) {
   return previewImages.get(index) || persistedImageFor(item);
 }
+function imageNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+function imageStyle(item) {
+  const x = imageNumber(item.imageX ?? item.image_x, 50, 0, 100);
+  const y = imageNumber(item.imageY ?? item.image_y, 50, 0, 100);
+  const zoom = imageNumber(item.imageZoom ?? item.image_zoom, 1, .7, 2.2);
+  return `--image-x:${x}%;--image-y:${y}%;--image-zoom:${zoom};`;
+}
 function hydrateTables(source) {
   const base = source || { types: {}, materials: {}, colors: {} };
   return {
@@ -82,6 +93,9 @@ function hydrateItems(source) {
     measures: item.measures || item.medidas || '',
     status: item.status || item.estado || 'disponible',
     description: item.description || '',
+    imageX: imageNumber(item.imageX ?? item.image_x, 50, 0, 100),
+    imageY: imageNumber(item.imageY ?? item.image_y, 50, 0, 100),
+    imageZoom: imageNumber(item.imageZoom ?? item.image_zoom, 1, .7, 2.2),
   }));
 }
 function normalizeStock(value) {
@@ -355,7 +369,7 @@ function render() {
   }
   grid.innerHTML = entries.map(({ item, index }) => `<article class="card ${escapeAttr(typeClass(item.type))} ${selected.has(index) ? 'selected' : ''}" data-index="${index}">
     <label class="select-card"><input type="checkbox" data-select onchange="toggleCardSelection(${index}, this.checked)" ${selected.has(index) ? 'checked' : ''}> Elegir</label>
-    <img src="${imageSrc(item, index)}" alt="${escapeHtml(item.original)}">
+    <img src="${imageSrc(item, index)}" alt="${escapeHtml(item.original)}" style="${imageStyle(item)}">
     <div class="body">
       <div class="code">${escapeHtml(code(item))}</div>
       <div class="descriptor">${escapeHtml(tableLabel(tables.types, item.type))} · ${escapeHtml(tableLabel(tables.materials, item.material))} · ${escapeHtml(item.color)} ${escapeHtml(tableLabel(tables.colors, item.color))}</div>
@@ -367,6 +381,9 @@ function render() {
         <div class="field"><label>Unidad</label><input data-field="unit" value="${escapeAttr(item.unit)}" maxlength="3"></div>
         <div class="field"><label>Precio €</label><input data-field="price" inputmode="decimal" placeholder="0,00" value="${escapeAttr(item.price || '')}"></div>
         <div class="field"><label>Stock</label><input data-field="stock" inputmode="numeric" placeholder="Cantidad" value="${escapeAttr(item.stock || '')}"></div>
+        <div class="field"><label>Horizontal</label><input data-field="imageX" type="range" min="0" max="100" step="1" value="${escapeAttr(item.imageX)}"></div>
+        <div class="field"><label>Vertical</label><input data-field="imageY" type="range" min="0" max="100" step="1" value="${escapeAttr(item.imageY)}"></div>
+        <div class="field full"><label>Tamaño foto</label><input data-field="imageZoom" type="range" min="0.7" max="2.2" step="0.05" value="${escapeAttr(item.imageZoom)}"></div>
         <div class="field full"><label>Foto nueva</label><input type="file" accept="image/*" data-replace-image onchange="replaceCardImage(${index}, this)">${item.replacementFileName ? `<span class="replacement-note">Nueva foto pendiente de subir: ${escapeHtml(item.replacementFileName)}</span>` : ''}</div>
         <div class="field full"><label>Estado</label><select data-field="status">
           <option value="disponible" ${item.status === 'disponible' ? 'selected' : ''}>Disponible</option>
@@ -384,7 +401,10 @@ function render() {
     card.querySelectorAll('[data-field]').forEach(input => {
       input.addEventListener('input', () => {
         const field = input.dataset.field;
-        items[index][field] = field === 'unit' ? input.value.replace(/\D/g, '').padStart(3, '0').slice(-3) : field === 'stock' ? input.value.replace(/\D/g, '') : input.value;
+        items[index][field] = field === 'unit' ? input.value.replace(/\D/g, '').padStart(3, '0').slice(-3) : field === 'stock' ? input.value.replace(/\D/g, '') : field === 'imageX' || field === 'imageY' ? imageNumber(input.value, 50, 0, 100) : field === 'imageZoom' ? imageNumber(input.value, 1, .7, 2.2) : input.value;
+        if (field === 'imageX' || field === 'imageY' || field === 'imageZoom') {
+          card.querySelector('img').setAttribute('style', imageStyle(items[index]));
+        }
         card.querySelector('.code').textContent = code(items[index]);
         if (field === 'type') {
           card.className = `card ${typeClass(items[index].type)} ${selected.has(index) ? 'selected' : ''}`;
@@ -392,9 +412,12 @@ function render() {
       });
       input.addEventListener('change', () => {
         const field = input.dataset.field;
-        items[index][field] = field === 'price' ? normalizePrice(input.value) : field === 'stock' ? normalizeStock(input.value) : input.value;
+        items[index][field] = field === 'price' ? normalizePrice(input.value) : field === 'stock' ? normalizeStock(input.value) : field === 'imageX' || field === 'imageY' ? imageNumber(input.value, 50, 0, 100) : field === 'imageZoom' ? imageNumber(input.value, 1, .7, 2.2) : input.value;
         if (field === 'price') input.value = items[index][field];
         if (field === 'stock') input.value = items[index][field];
+        if (field === 'imageX' || field === 'imageY' || field === 'imageZoom') {
+          card.querySelector('img').setAttribute('style', imageStyle(items[index]));
+        }
         card.querySelector('.code').textContent = code(items[index]);
         if (field === 'type') {
           card.className = `card ${typeClass(items[index].type)} ${selected.has(index) ? 'selected' : ''}`;
@@ -440,8 +463,8 @@ function download(filename, text, type = 'text/plain') {
   URL.revokeObjectURL(url);
 }
 function toCsv() {
-  const header = ['original','nuevo_nombre','nombre_comercial','tipo','tipo_nombre','material','material_nombre','color_codigo','color_nombre','unidad','precio_eur','precio_mostrado','stock','medidas','estado','foto_reemplazada','notas'];
-  const rows = items.map(i => [i.original, newName(i), i.productName || '', i.type, tableLabel(tables.types, i.type), i.material, tableLabel(tables.materials, i.material), i.color, tableLabel(tables.colors, i.color), i.unit, normalizePrice(i.price), formatPrice(i.price), normalizeStock(i.stock), i.measures || '', i.status || 'disponible', i.replacementFileName || '', i.notes || '']);
+  const header = ['original','nuevo_nombre','nombre_comercial','tipo','tipo_nombre','material','material_nombre','color_codigo','color_nombre','unidad','precio_eur','precio_mostrado','stock','medidas','estado','imagen_x','imagen_y','imagen_zoom','foto_reemplazada','notas'];
+  const rows = items.map(i => [i.original, newName(i), i.productName || '', i.type, tableLabel(tables.types, i.type), i.material, tableLabel(tables.materials, i.material), i.color, tableLabel(tables.colors, i.color), i.unit, normalizePrice(i.price), formatPrice(i.price), normalizeStock(i.stock), i.measures || '', i.status || 'disponible', i.imageX, i.imageY, i.imageZoom, i.replacementFileName || '', i.notes || '']);
   return [header, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 document.getElementById('saveBtn').addEventListener('click', () => { save(); alert('Guardado en este navegador.'); });

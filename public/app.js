@@ -38,6 +38,16 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
 }
 
+function imageStyle(item) {
+  const x = Number(item.image_x ?? item.imagePositionX ?? 50);
+  const y = Number(item.image_y ?? item.imagePositionY ?? 50);
+  const zoom = Number(item.image_zoom ?? item.imageZoom ?? 1);
+  const safeX = Number.isFinite(x) ? Math.min(100, Math.max(0, x)) : 50;
+  const safeY = Number.isFinite(y) ? Math.min(100, Math.max(0, y)) : 50;
+  const safeZoom = Number.isFinite(zoom) ? Math.min(2.2, Math.max(.7, zoom)) : 1;
+  return `--image-x:${safeX}%;--image-y:${safeY}%;--image-zoom:${safeZoom};`;
+}
+
 function render() {
   const query = search.value.trim().toLowerCase();
   const rows = catalog.filter(item =>
@@ -47,7 +57,7 @@ function render() {
     (!query || JSON.stringify(item).toLowerCase().includes(query))
   );
   grid.innerHTML = rows.length ? rows.map(item => `<article class="card type-${item.tipo}">
-    <div class="image"><img src="${item.archivo}" alt="${escapeHtml(item.codigo)}" loading="lazy"></div>
+    <div class="image"><img src="${item.archivo}" alt="${escapeHtml(item.codigo)}" loading="lazy" style="${imageStyle(item)}"></div>
   </article>`).join('') : `<section class="empty-state"><strong>${escapeHtml(emptyTitle)}</strong><span>${escapeHtml(emptyText)}</span></section>`;
 }
 
