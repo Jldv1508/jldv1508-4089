@@ -360,7 +360,6 @@ function render() {
       <div class="original">${escapeHtml(item.original)}</div>
       <div class="code">${escapeHtml(code(item))}</div>
       <div class="descriptor">${escapeHtml(tableLabel(tables.types, item.type))} · ${escapeHtml(tableLabel(tables.materials, item.material))} · ${escapeHtml(item.color)} ${escapeHtml(tableLabel(tables.colors, item.color))}</div>
-      ${item.referenceCsv || item.idf ? `<div class="csv-ref">${escapeHtml(item.referenceCsv || '')}${item.idf ? ` · ${escapeHtml(item.idf)}` : ''}${item.imageCount ? ` · ${escapeHtml(item.imageCount)} fotos` : ''}</div>` : ''}
       ${qualityIssues(item).length ? `<div class="quality-warning">${qualityIssues(item).map(issue => issue === 'posible_desenfoque' ? 'Posible desenfoque' : 'Relleno central').join(' · ')}</div>` : ''}
       <div class="price-display">${escapeHtml(formatPrice(item.price))}</div>
       <div class="fields">
