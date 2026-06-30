@@ -3,6 +3,11 @@ const TABLES_KEY = document.body.dataset.tablesKey || 'jldv1508CodeTablesV1';
 const LEGACY_STORAGE_KEYS = (document.body.dataset.legacyStorageKeys || '').split(',').map(key => key.trim()).filter(Boolean);
 const LEGACY_TABLES_KEYS = (document.body.dataset.legacyTablesKeys || '').split(',').map(key => key.trim()).filter(Boolean);
 const BACKUP_KEY = `${STORAGE_KEY}:ultimo-respaldo`;
+const TYPE_CORRECTIONS = {
+  accesorio_001: { from: 'ACC', to: 'PEN' },
+  conjunto_0011: { from: 'CON', to: 'COL' },
+  pin_0011: { from: 'PIN', to: 'COL' },
+};
 let items = hydrateItems(loadStoredList(STORAGE_KEY, LEGACY_STORAGE_KEYS, window.INITIAL_ITEMS));
 let tables = hydrateTables(loadStoredObject(TABLES_KEY, LEGACY_TABLES_KEYS, window.CODE_TABLES));
 const grid = document.getElementById('grid');
@@ -10,11 +15,6 @@ const selected = new Set();
 const previewImages = new Map();
 let qualityByOriginal = {};
 let qualityByCode = {};
-const TYPE_CORRECTIONS = {
-  accesorio_001: { from: 'ACC', to: 'PEN' },
-  conjunto_0011: { from: 'CON', to: 'COL' },
-  pin_0011: { from: 'PIN', to: 'COL' },
-};
 
 function ext(name) {
   const i = name.lastIndexOf('.');
