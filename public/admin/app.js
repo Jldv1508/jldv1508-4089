@@ -15,6 +15,9 @@ function ext(name) {
 function code(item) {
   return `${item.type}-${item.material}-${item.color}-${item.unit}`;
 }
+function typeClass(value) {
+  return `type-${String(value || '').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
 function newName(item) {
   const outputExtension = item.transparent ? ext(item.transparent) : String(item.image || '').toLowerCase().endsWith('.webp') ? '.webp' : ext(item.original);
   return `${code(item)}${outputExtension}`;
@@ -104,10 +107,10 @@ function capitalize(value) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 function options(table, selected) {
-  return Object.entries(table).map(([k, v]) => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k} · ${escapeHtml(v)}</option>`).join('');
+  return Object.entries(table).map(([k, v]) => `<option value="${escapeAttr(k)}" ${k === selected ? 'selected' : ''}>${escapeHtml(k)} · ${escapeHtml(v)}</option>`).join('');
 }
 function noChangeOptions(table) {
-  return '<option value="">Sin cambio</option>' + Object.entries(table).map(([k, v]) => `<option value="${k}">${k} · ${escapeHtml(v)}</option>`).join('');
+  return '<option value="">Sin cambio</option>' + Object.entries(table).map(([k, v]) => `<option value="${escapeAttr(k)}">${escapeHtml(k)} · ${escapeHtml(v)}</option>`).join('');
 }
 function multiFilterOptions(table, name) {
   return Object.entries(table).map(([k, v]) => `<label class="multi-option">
@@ -167,9 +170,7 @@ function legendText(table) {
   return Object.entries(table).map(([key, value]) => `<b>${escapeHtml(key)}</b> ${escapeHtml(value)}`).join(', ');
 }
 function normalizeCode(kind, value) {
-  const raw = String(value || '').trim().toUpperCase();
-  if (kind === 'types') return raw.replace(/[^A-Z0-9]/g, '').slice(0, 4);
-  return raw.replace(/\D/g, '').padStart(3, '0').slice(-3);
+  return String(value || '').trim().replace(/[\u0000-\u001F\u007F]/g, '');
 }
 function saveTables() {
   localStorage.setItem(TABLES_KEY, JSON.stringify(tables));
@@ -311,7 +312,7 @@ function render() {
     if (visibleCount) visibleCount.textContent = '0 visibles';
     return;
   }
-  grid.innerHTML = entries.map(({ item, index }) => `<article class="card type-${item.type} ${selected.has(index) ? 'selected' : ''}" data-index="${index}">
+  grid.innerHTML = entries.map(({ item, index }) => `<article class="card ${escapeAttr(typeClass(item.type))} ${selected.has(index) ? 'selected' : ''}" data-index="${index}">
     <label class="select-card"><input type="checkbox" data-select onchange="toggleCardSelection(${index}, this.checked)" ${selected.has(index) ? 'checked' : ''}> Elegir</label>
     <img src="${imageSrc(item, index)}" alt="${escapeHtml(item.original)}">
     <div class="body">
