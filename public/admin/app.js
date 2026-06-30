@@ -549,8 +549,14 @@ function download(filename, text, type = 'text/plain') {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 1000);
 }
 function safeScriptJson(value) {
   return JSON.stringify(value, null, 2).replace(/</g, '\\u003c');
@@ -569,6 +575,9 @@ function backupPayload() {
     tables,
     items: items.map(i => ({ ...i, image: persistedImageFor(i), newName: newName(i), code: code(i) })),
   };
+}
+function catalogSlug() {
+  return STORAGE_KEY.toLowerCase().includes('conchas') ? 'conchas' : 'bisuteria';
 }
 function editableHtml() {
   const payload = backupPayload();
@@ -626,8 +635,10 @@ function editableHtml() {
       const blob = new Blob([text], { type });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = name; a.click();
-      URL.revokeObjectURL(url);
+      a.href = url; a.download = name; a.rel = 'noopener'; a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
     }
     document.getElementById('downloadJson').onclick = () => { syncScript(); download('respaldo-jldv1508-editado.json', JSON.stringify(backup, null, 2), 'application/json'); };
     document.getElementById('downloadHtml').onclick = () => { syncScript(); download('respaldo-jldv1508-editado.html', '<!doctype html>\\n' + document.documentElement.outerHTML, 'text/html'); };
@@ -649,11 +660,11 @@ document.getElementById('saveBtn').addEventListener('click', () => { save(); ale
 document.getElementById('csvBtn').addEventListener('click', () => { save(); download('renombrado-jldv1508.csv', toCsv(), 'text/csv'); });
 document.getElementById('jsonBtn').addEventListener('click', () => {
   save();
-  download('respaldo-jldv1508.json', JSON.stringify(backupPayload(), null, 2), 'application/json');
+  download(`respaldo-${catalogSlug()}-jldv1508.json`, JSON.stringify(backupPayload(), null, 2), 'application/json');
 });
 document.getElementById('htmlBtn')?.addEventListener('click', () => {
   save();
-  download('respaldo-editable-jldv1508.html', editableHtml(), 'text/html');
+  download(`respaldo-editable-${catalogSlug()}-jldv1508.html`, editableHtml(), 'text/html');
 });
 document.getElementById('restoreJsonInput')?.addEventListener('change', event => {
   const file = event.target.files?.[0];
