@@ -294,6 +294,26 @@ function localPublicData() {
   }
 }
 
+function rowKey(item) {
+  return item.codigo || item.archivo || item.referencia_csv || `${item.tipo || ''}-${item.material || ''}-${item.color || ''}-${item.nombre_comercial || ''}`;
+}
+
+function mergeCatalogRows(baseRows, extraRows) {
+  const rows = Array.isArray(baseRows) ? [...baseRows] : [];
+  const extras = Array.isArray(extraRows) ? extraRows : [];
+  const indexByKey = new Map(rows.map((item, index) => [rowKey(item), index]));
+  extras.forEach(item => {
+    const key = rowKey(item);
+    if (indexByKey.has(key)) {
+      rows[indexByKey.get(key)] = item;
+    } else {
+      indexByKey.set(key, rows.length);
+      rows.push(item);
+    }
+  });
+  return rows;
+}
+
 function renderFromEvent() {
   if (!syncingFilters) render();
 }
@@ -324,7 +344,7 @@ document.addEventListener('keydown', event => {
 fetch(catalogUrl).then(response => response.json()).then(data => {
   const localData = localPublicData();
   if (localData?.tables) activeTables = mergeTables(localData.tables);
-  catalog = localData?.items || data;
+  catalog = mergeCatalogRows(data, localData?.items);
   originalIndexById = new Map(catalog.map((item, index) => [item.codigo || item.archivo || item.referencia_csv || `${index}`, index]));
   syncSmartFilters();
   restoreUrlFilters();
