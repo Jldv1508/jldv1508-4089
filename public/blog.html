@@ -52,50 +52,7 @@
         <h2>Repositorios</h2>
         <p>Enlaces rápidos a los proyectos que quieras tener a mano.</p>
       </div>
-      <div class="repo-grid">
-        <article class="repo-card">
-          <div class="repo-head">
-            <span class="repo-tag">Principal</span>
-            <span class="repo-lang">Next.js</span>
-          </div>
-          <h3>Catálogo jldv1508</h3>
-          <p>Catálogo de bisutería y conchas con portada, filtros inteligentes y editor administrativo.</p>
-          <div class="repo-meta">
-            <span>GitHub</span><span>Vercel</span><span>Catálogo</span>
-          </div>
-          <div class="repo-actions">
-            <a href="https://github.com/Jldv1508/Catalogo" target="_blank" rel="noreferrer">Abrir código</a>
-          </div>
-        </article>
-        <article class="repo-card">
-          <div class="repo-head">
-            <span class="repo-tag">Utilidad</span>
-            <span class="repo-lang">HTML</span>
-          </div>
-          <h3>Editor offline</h3>
-          <p>Versión descargable para editar contenido fuera de línea y devolverlo al proyecto.</p>
-          <div class="repo-meta">
-            <span>Exportación</span><span>Backups</span><span>Edición masiva</span>
-          </div>
-          <div class="repo-actions">
-            <a href="/admin">Abrir admin</a>
-          </div>
-        </article>
-        <article class="repo-card">
-          <div class="repo-head">
-            <span class="repo-tag">Contenido</span>
-            <span class="repo-lang">JSON</span>
-          </div>
-          <h3>Catálogo público</h3>
-          <p>Fuente de datos para las vistas públicas, con tarjetas compactas y selección por atributos.</p>
-          <div class="repo-meta">
-            <span>Filtros</span><span>Ordenación</span><span>Vista rápida</span>
-          </div>
-          <div class="repo-actions">
-            <a href="/catalogo.html">Ver portada</a>
-          </div>
-        </article>
-      </div>
+      <div class="repo-grid" id="repoGrid"></div>
     </section>
 
     <section class="blog-band" id="programas">
@@ -103,28 +60,7 @@
         <h2>Programas</h2>
         <p>Herramientas y pantallas que puedes usar como lanzadores de trabajo.</p>
       </div>
-      <div class="program-grid">
-        <article class="program-card">
-          <strong>Admin de bisutería</strong>
-          <p>Renombrado, publicación pública, exportación y edición por lotes.</p>
-          <div class="program-actions"><a href="/admin">Abrir</a></div>
-        </article>
-        <article class="program-card">
-          <strong>Admin de conchas</strong>
-          <p>Gestión paralela para el catálogo de conchas con el mismo flujo operativo.</p>
-          <div class="program-actions"><a href="/admin/conchas">Abrir</a></div>
-        </article>
-        <article class="program-card">
-          <strong>Bisutería pública</strong>
-          <p>Vista pública con árbol de categorías, filtros desplegables y visor ampliado.</p>
-          <div class="program-actions"><a href="/bisuteria">Abrir</a></div>
-        </article>
-        <article class="program-card">
-          <strong>Conchas públicas</strong>
-          <p>Interfaz ligera para consultar piezas, ordenarlas y localizar variantes rápido.</p>
-          <div class="program-actions"><a href="/conchas">Abrir</a></div>
-        </article>
-      </div>
+      <div class="program-grid" id="programGrid"></div>
     </section>
 
     <section class="blog-band" id="bitacora">
@@ -132,21 +68,9 @@
         <h2>Bitácora</h2>
         <p>Zona breve para anotar cambios, enlaces y decisiones de cada proyecto.</p>
       </div>
-      <div class="timeline">
-        <div class="timeline-item">
-          <strong>Inicio</strong>
-          <span>Centraliza aquí repositorios, utilidades y programas.</span>
-        </div>
-        <div class="timeline-item">
-          <strong>Estado</strong>
-          <span>Deja visible la versión activa y el enlace correcto de cada herramienta.</span>
-        </div>
-        <div class="timeline-item">
-          <strong>Uso</strong>
-          <span>Haz crecer el blog con más tarjetas cuando añadas nuevos proyectos.</span>
-        </div>
-      </div>
+      <div class="timeline" id="timelineGrid"></div>
     </section>
   </main>
+  <script src="/blog.js" defer></script>
 </body>
 </html>
