@@ -5,7 +5,7 @@ const STATUS = { disponible: 'Disponible', reservado: 'Reservado', vendido: 'Ven
 
 const grid = document.querySelector('#grid');
 const search = document.querySelector('#search');
-const status = document.querySelector('#status');
+const sortOrder = document.querySelector('#sortOrder');
 const typeFilter = document.querySelector('#typeFilter');
 const materialFilter = document.querySelector('#materialFilter');
 const colorFilter = document.querySelector('#colorFilter');
@@ -18,6 +18,7 @@ const emptyText = document.body.dataset.emptyText || 'Estamos preparando una nue
 let catalog = [];
 let syncingFilters = false;
 let currentRows = [];
+let originalIndexById = new Map();
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
@@ -77,7 +78,6 @@ function searchText(item) {
 function baseRows() {
   const query = search.value.trim().toLowerCase();
   return catalog.filter(item =>
-    (!status?.value || (item.estado || 'disponible') === status.value) &&
     (!query || searchText(item).includes(query))
   );
 }
@@ -96,6 +96,18 @@ function selectedRows() {
     (!materialFilter?.value || itemMaterial(item) === materialFilter.value) &&
     (!colorFilter?.value || itemColor(item) === colorFilter.value)
   );
+}
+
+function sortRows(rows) {
+  const mode = sortOrder?.value || 'original';
+  const compare = {
+    original: (a, b) => (originalIndexById.get(a.codigo || a.archivo || a.referencia_csv || '') ?? 0) - (originalIndexById.get(b.codigo || b.archivo || b.referencia_csv || '') ?? 0),
+    name: (a, b) => cardTitle(a).localeCompare(cardTitle(b), 'es'),
+    type: (a, b) => typeName(a).localeCompare(typeName(b), 'es') || cardTitle(a).localeCompare(cardTitle(b), 'es'),
+    material: (a, b) => materialName(a).localeCompare(materialName(b), 'es') || cardTitle(a).localeCompare(cardTitle(b), 'es'),
+    color: (a, b) => colorName(a).localeCompare(colorName(b), 'es') || cardTitle(a).localeCompare(cardTitle(b), 'es'),
+  }[mode] || ((a, b) => 0);
+  return [...rows].sort(compare);
 }
 
 function optionRows(rows, keyFn, labelFn) {
@@ -144,29 +156,17 @@ function syncUrl() {
   if (typeFilter?.value) params.set('tipo', typeFilter.value);
   if (materialFilter?.value) params.set('material', materialFilter.value);
   if (colorFilter?.value) params.set('color', colorFilter.value);
-  if (status?.value) params.set('estado', status.value);
+  if (sortOrder?.value && sortOrder.value !== 'original') params.set('sort', sortOrder.value);
   history.replaceState(null, '', `${location.pathname}${params.toString() ? `?${params}` : ''}`);
 }
 
 function restoreUrlFilters() {
   const params = new URLSearchParams(location.search);
   search.value = params.get('q') || '';
-  if (status) status.value = params.get('estado') || '';
   if (typeFilter) typeFilter.value = params.get('tipo') || '';
   if (materialFilter) materialFilter.value = params.get('material') || '';
   if (colorFilter) colorFilter.value = params.get('color') || '';
-}
-
-function optionizeStatus() {
-  const values = catalog.reduce((options, item) => {
-    const key = item.estado || 'disponible';
-    if (!options[key]) options[key] = STATUS[key] || key;
-    return options;
-  }, {});
-  status.innerHTML = '<option value="">Todos los estados</option>';
-  Object.entries(values).forEach(([key, value]) => {
-    status.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(key)}">${escapeHtml(value)}</option>`);
-  });
+  if (sortOrder) sortOrder.value = params.get('sort') || 'original';
 }
 
 function imageStyle(item) {
@@ -207,7 +207,7 @@ function detailsHtml(item) {
 
 function render() {
   syncSmartFilters();
-  const rows = selectedRows();
+  const rows = sortRows(selectedRows());
   currentRows = rows;
   syncUrl();
   if (visibleCount) visibleCount.textContent = `${rows.length} de ${catalog.length}`;
@@ -278,13 +278,13 @@ function renderFromEvent() {
 }
 
 search.addEventListener('input', render);
-status?.addEventListener('input', render);
+sortOrder?.addEventListener('input', render);
 typeFilter?.addEventListener('input', renderFromEvent);
 materialFilter?.addEventListener('input', renderFromEvent);
 colorFilter?.addEventListener('input', renderFromEvent);
 clearFilters?.addEventListener('click', () => {
   search.value = '';
-  if (status) status.value = '';
+  if (sortOrder) sortOrder.value = 'original';
   if (typeFilter) typeFilter.value = '';
   if (materialFilter) materialFilter.value = '';
   if (colorFilter) colorFilter.value = '';
@@ -302,7 +302,7 @@ document.addEventListener('keydown', event => {
 
 fetch(catalogUrl).then(response => response.json()).then(data => {
   catalog = localPublicCatalog() || data;
-  optionizeStatus();
+  originalIndexById = new Map(catalog.map((item, index) => [item.codigo || item.archivo || item.referencia_csv || `${index}`, index]));
   syncSmartFilters();
   restoreUrlFilters();
   render();
