@@ -86,8 +86,8 @@ body:not(.home) main:not(.choice-screen) { display:grid; grid-template-columns:r
 .item-viewer-head { display:grid; gap:4px; padding-right:34px; }
 .item-viewer-kicker { margin:0; color:var(--gold); font-size:11px; font-weight:900; text-transform:uppercase; }
 .item-viewer-info h2 { margin:0; font-family:Georgia,serif; font-size:clamp(22px,2.4vw,34px); line-height:1.05; letter-spacing:0; overflow-wrap:anywhere; }
-.item-viewer-details dl { margin:0; display:grid; gap:4px; }
-.item-viewer-details div { display:grid; grid-template-columns:84px minmax(0,1fr); gap:8px; border-top:1px solid #ece5dc; padding-top:5px; }
+.item-viewer-details dl { margin:0; display:grid; gap:5px; }
+.item-viewer-details div { display:grid; grid-template-columns:1fr; gap:2px; border-top:1px solid #ece5dc; padding-top:5px; }
 .item-viewer-details dt { color:var(--muted); font-size:10px; line-height:1.2; font-weight:900; text-transform:uppercase; }
 .item-viewer-details dd { margin:0; min-width:0; font-size:12px; line-height:1.25; font-weight:750; word-break:break-word; }
 
