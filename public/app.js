@@ -7,10 +7,8 @@ const grid = document.querySelector('#grid');
 const search = document.querySelector('#search');
 const sortOrder = document.querySelector('#sortOrder');
 const typeFilter = document.querySelector('#typeFilter');
-const variantFilter = document.querySelector('#variantFilter');
 const materialFilter = document.querySelector('#materialFilter');
 const colorFilter = document.querySelector('#colorFilter');
-const categoryTree = document.querySelector('#categoryTree');
 const visibleCount = document.querySelector('#visibleCount');
 const clearFilters = document.querySelector('#clearFilters');
 const catalogUrl = document.body.dataset.catalogUrl || 'catalogo-fotos.json?v=780-20260630';
@@ -21,9 +19,6 @@ let catalog = [];
 let syncingFilters = false;
 let currentRows = [];
 let originalIndexById = new Map();
-let treeFamilyFilter = '';
-let treeVariantFilter = '';
-let categoryIndex = [];
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
@@ -69,35 +64,6 @@ function itemIdf(item) {
   return cleanName(item.idf || item.id || item.codigo || '');
 }
 
-function treeFamily(item) {
-  const idf = itemIdf(item).toLowerCase();
-  if (!idf.includes('_')) return '';
-  return idf.split('_')[0];
-}
-
-function treeVariant(item) {
-  const idf = itemIdf(item).toLowerCase();
-  return idf.includes('_') ? idf : '';
-}
-
-function treeLabel(value) {
-  const key = cleanName(value).toLowerCase();
-  if (!key) return 'Sin categoría';
-  const labels = {
-    pulsera: 'Pulseras',
-    anillo: 'Anillos',
-    pendiente: 'Pendientes',
-    collar: 'Collares',
-    conjunto: 'Conjuntos',
-    broche: 'Broches',
-    pieza: 'Piezas',
-    concha: 'Conchas',
-    accesorio: 'Accesorios',
-  };
-  if (labels[key]) return labels[key];
-  return key.charAt(0).toUpperCase() + key.slice(1);
-}
-
 function searchText(item) {
   return [
     item.codigo,
@@ -127,8 +93,6 @@ function baseRows() {
 function rowsForOptions(ignore) {
   return baseRows().filter(item =>
     (ignore === 'type' || !typeFilter?.value || itemType(item) === typeFilter.value) &&
-    (ignore === 'variant' || !variantFilter?.value || treeVariant(item) === variantFilter.value.toLowerCase()) &&
-    (ignore === 'tree' || !treeFamilyFilter || treeFamily(item) === treeFamilyFilter || treeVariant(item) === treeVariantFilter) &&
     (ignore === 'material' || !materialFilter?.value || itemMaterial(item) === materialFilter.value) &&
     (ignore === 'color' || !colorFilter?.value || itemColor(item) === colorFilter.value)
   );
@@ -137,8 +101,6 @@ function rowsForOptions(ignore) {
 function selectedRows() {
   return baseRows().filter(item =>
     (!typeFilter?.value || itemType(item) === typeFilter.value) &&
-    (!variantFilter?.value || treeVariant(item) === variantFilter.value.toLowerCase()) &&
-    (!treeFamilyFilter || treeFamily(item) === treeFamilyFilter || treeVariant(item) === treeVariantFilter) &&
     (!materialFilter?.value || itemMaterial(item) === materialFilter.value) &&
     (!colorFilter?.value || itemColor(item) === colorFilter.value)
   );
@@ -166,42 +128,6 @@ function optionRows(rows, keyFn, labelFn) {
   return [...options.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label, 'es'));
 }
 
-function variantRows(rows) {
-  const options = new Map();
-  rows.forEach(item => {
-    const key = treeVariant(item);
-    if (!key) return;
-    if (!options.has(key)) options.set(key, { label: itemIdf(item), count: 0 });
-    options.get(key).count += 1;
-  });
-  return [...options.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label, 'es'));
-}
-
-function buildCategoryIndex(items) {
-  const groups = new Map();
-  items.forEach(item => {
-    const variant = itemIdf(item).toLowerCase();
-    if (!variant.includes('_')) return;
-    const family = variant.split('_')[0];
-    if (!groups.has(family)) {
-      groups.set(family, { count: 0, variants: new Map() });
-    }
-    const group = groups.get(family);
-    group.count += 1;
-    group.variants.set(variant, (group.variants.get(variant) || 0) + 1);
-  });
-  return [...groups.entries()]
-    .map(([family, group]) => ({
-      family,
-      label: treeLabel(family),
-      count: group.count,
-      variants: [...group.variants.entries()]
-        .map(([variant, count]) => ({ variant, count }))
-        .sort((a, b) => a.variant.localeCompare(b.variant, 'es')),
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
-}
-
 function fillSelect(select, placeholder, options) {
   if (!select) return;
   const previous = select.value;
@@ -212,44 +138,12 @@ function fillSelect(select, placeholder, options) {
   select.value = options.some(([key]) => key === previous) ? previous : '';
 }
 
-function syncTreeFilter() {
-  if (!categoryTree) return;
-  if (!categoryIndex.length) {
-    categoryTree.innerHTML = '';
-    return;
-  }
-  categoryTree.innerHTML = `<details class="tree-node tree-material" open>
-    <summary>Subcategorías con _</summary>
-    <div class="tree-children">
-      ${categoryIndex.map(({ family, label, count, variants }) => {
-        const isOpen = treeFamilyFilter === family || treeVariantFilter.startsWith(`${family}_`);
-        return `<details class="tree-node tree-material"${isOpen ? ' open' : ''}>
-        <summary>${escapeHtml(label)} <em>(${count})</em></summary>
-        <div class="tree-children">
-          <button class="tree-select${treeFamilyFilter === family ? ' active' : ''}" type="button" data-family="${escapeAttr(family)}">
-            <span>Ver todas</span><em>${count}</em>
-          </button>
-          ${variants.map(({ variant, count }) => `<button class="tree-select${treeVariantFilter === variant ? ' active' : ''}" type="button" data-variant="${escapeAttr(variant)}" data-family="${escapeAttr(family)}">
-            <span>${escapeHtml(variant)}</span><em>${count}</em>
-          </button>`).join('')}
-        </div>
-      </details>`;
-      }).join('')}
-    </div>
-  </details>`;
-}
-
 function syncSmartFilters() {
   syncingFilters = true;
   fillSelect(
     typeFilter,
     'Todos los tipos',
     optionRows(rowsForOptions('type'), itemType, typeName)
-  );
-  fillSelect(
-    variantFilter,
-    'Todas las subcategorías',
-    variantRows(rowsForOptions('variant').filter(item => itemIdf(item).includes('_')))
   );
   fillSelect(
     materialFilter,
@@ -268,10 +162,8 @@ function syncUrl() {
   const params = new URLSearchParams();
   if (search.value.trim()) params.set('q', search.value.trim());
   if (typeFilter?.value) params.set('tipo', typeFilter.value);
-  if (variantFilter?.value) params.set('sub', variantFilter.value);
   if (materialFilter?.value) params.set('material', materialFilter.value);
   if (colorFilter?.value) params.set('color', colorFilter.value);
-  if (treeFamilyFilter) params.set('familia', treeFamilyFilter);
   if (sortOrder?.value && sortOrder.value !== 'original') params.set('sort', sortOrder.value);
   history.replaceState(null, '', `${location.pathname}${params.toString() ? `?${params}` : ''}`);
 }
@@ -280,11 +172,8 @@ function restoreUrlFilters() {
   const params = new URLSearchParams(location.search);
   search.value = params.get('q') || '';
   if (typeFilter) typeFilter.value = params.get('tipo') || '';
-  if (variantFilter) variantFilter.value = params.get('sub') || '';
   if (materialFilter) materialFilter.value = params.get('material') || '';
   if (colorFilter) colorFilter.value = params.get('color') || '';
-  treeFamilyFilter = params.get('familia') || '';
-  treeVariantFilter = params.get('sub') || '';
   if (sortOrder) sortOrder.value = params.get('sort') || 'original';
 }
 
@@ -400,33 +289,14 @@ function renderFromEvent() {
 search.addEventListener('input', render);
 sortOrder?.addEventListener('input', render);
 typeFilter?.addEventListener('input', renderFromEvent);
-variantFilter?.addEventListener('input', () => {
-  const value = (variantFilter?.value || '').toLowerCase();
-  treeVariantFilter = value;
-  treeFamilyFilter = value.includes('_') ? value.split('_')[0] : '';
-  renderFromEvent();
-});
 materialFilter?.addEventListener('input', renderFromEvent);
 colorFilter?.addEventListener('input', renderFromEvent);
-categoryTree?.addEventListener('click', event => {
-  const button = event.target.closest('button[data-family],button[data-variant]');
-  if (!button) return;
-  const family = button.dataset.family || '';
-  const variant = button.dataset.variant || '';
-  treeFamilyFilter = family;
-  treeVariantFilter = variant;
-  if (variantFilter) variantFilter.value = variant || '';
-  render();
-});
 clearFilters?.addEventListener('click', () => {
   search.value = '';
   if (sortOrder) sortOrder.value = 'original';
   if (typeFilter) typeFilter.value = '';
-  if (variantFilter) variantFilter.value = '';
   if (materialFilter) materialFilter.value = '';
   if (colorFilter) colorFilter.value = '';
-  treeFamilyFilter = '';
-  treeVariantFilter = '';
   render();
 });
 grid?.addEventListener('click', event => {
@@ -442,7 +312,6 @@ document.addEventListener('keydown', event => {
 fetch(catalogUrl).then(response => response.json()).then(data => {
   catalog = localPublicCatalog() || data;
   originalIndexById = new Map(catalog.map((item, index) => [item.codigo || item.archivo || item.referencia_csv || `${index}`, index]));
-  categoryIndex = buildCategoryIndex(catalog);
   syncSmartFilters();
   restoreUrlFilters();
   render();
