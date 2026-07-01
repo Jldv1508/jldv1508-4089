@@ -6,16 +6,20 @@
   <title>Conchas · jldv1508</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body data-catalog-title="Catálogo de conchas" data-catalog-url="catalogo-conchas.json?v=2-20260630" data-empty-title="Conchas en preparación" data-empty-text="Este catálogo está listo para recibir las fotos de conchas.">
+<body data-catalog-title="Catálogo de conchas" data-catalog-url="catalogo-conchas.json?v=2-20260630" data-public-storage-key="jldv1508PublicCatalogConchasV1" data-empty-title="Conchas en preparación" data-empty-text="Este catálogo está listo para recibir las fotos de conchas.">
   <header>
     <p><a href="/">jldv1508.com</a></p>
     <h1>Catálogo de conchas</h1>
     <div class="controls">
       <input id="search" placeholder="Buscar código, color, material...">
-      <select id="type"><option value="">Todos los tipos</option></select>
-      <select id="material"><option value="">Todos los materiales</option></select>
-      <select id="color"><option value="">Todos los colores</option></select>
+      <select id="status"><option value="">Todos los estados</option></select>
+      <button id="clearFilters" type="button">Limpiar filtros</button>
+      <span id="visibleCount" class="visible-count">0 de 0</span>
     </div>
+    <section class="filter-tree" aria-label="Filtros por árbol">
+      <div class="filter-tree-title">Filtros: tipo > material > color</div>
+      <div id="filterTree"></div>
+    </section>
   </header>
   <main id="grid"></main>
   <script src="app.js?v=780-public-v6"></script>

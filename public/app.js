@@ -1,41 +1,135 @@
 const TYPE = { PUL: 'Pulsera', ANI: 'Anillo', PEN: 'Pendiente', COL: 'Collar', CON: 'Conjunto', BRO: 'Broche', PIE: 'Pieza', CCH: 'Concha', ACC: 'Accesorio', PIN: 'Pin' };
 const COLOR = { '000': 'Pendiente', '001': 'Multicolor', '002': 'Blanco', '003': 'Negro', '004': 'Rojo', '005': 'Plateado', '006': 'Verde', '007': 'Azul', '008': 'Marrón', '009': 'Multicolor', '010': 'Naranja', '011': 'Amarillo', '012': 'Morado', '013': 'Turquesa', '014': 'Rosa', '015': 'Gris', '016': 'Lila', '017': 'Fucsia', '999': 'Pendiente' };
 const MATERIAL = { '000': 'Pendiente', '001': 'Resina', '002': 'Latón', '003': 'Piedra', '004': 'Cristal', '005': 'Acero inoxidable', '006': 'Metal', '007': 'Cuero', '008': 'Tela', '009': 'Material mixto', '010': 'Perla', '011': 'Acero', '012': 'Plata', '013': 'Dorado / baño oro', '999': 'Pendiente' };
+const STATUS = { disponible: 'Disponible', reservado: 'Reservado', vendido: 'Vendido', oculto: 'Oculto' };
+
 const grid = document.querySelector('#grid');
 const search = document.querySelector('#search');
-const type = document.querySelector('#type');
-const material = document.querySelector('#material');
-const color = document.querySelector('#color');
+const status = document.querySelector('#status');
+const filterTree = document.querySelector('#filterTree');
+const visibleCount = document.querySelector('#visibleCount');
+const clearFilters = document.querySelector('#clearFilters');
 const catalogUrl = document.body.dataset.catalogUrl || 'catalogo-fotos.json?v=780-20260630';
+const publicStorageKey = document.body.dataset.publicStorageKey || '';
 const emptyTitle = document.body.dataset.emptyTitle || 'Catálogo en blanco';
 const emptyText = document.body.dataset.emptyText || 'Estamos preparando una nueva selección de piezas.';
 let catalog = [];
 
-function optionize(select, values) {
-  const selected = select.value;
-  const first = select.querySelector('option')?.outerHTML || '<option value="">Todos</option>';
-  select.innerHTML = first;
-  Object.entries(values).forEach(([key, value]) => {
-    select.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(key)}">${escapeHtml(value)}</option>`);
-  });
-  select.value = values[selected] ? selected : '';
-}
-
-function filterOptions(base, field, nameField) {
-  return catalog.reduce((options, item) => {
-    const key = item[field];
-    if (key && !options[key]) options[key] = item[nameField] || key;
-    return options;
-  }, { ...base });
-}
-
-function price(value) {
-  const number = Number(String(value || '').replace(',', '.'));
-  return Number.isFinite(number) && number > 0 ? `${number.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : '';
-}
-
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
+}
+
+function labelFor(table, key, fallback) {
+  return fallback || table[key] || key || 'Pendiente';
+}
+
+function nodeValue(...parts) {
+  return parts.filter(Boolean).join('|');
+}
+
+function selectedTreeValues() {
+  return [...document.querySelectorAll('input[name="treeFilter"]:checked')].map(input => input.value);
+}
+
+function matchesTree(item, selectedValues) {
+  if (!selectedValues.length) return true;
+  const itemType = nodeValue(item.tipo);
+  const itemMaterial = nodeValue(item.tipo, item.material);
+  const itemColor = nodeValue(item.tipo, item.material, item.color);
+  return selectedValues.some(value => value === itemType || value === itemMaterial || value === itemColor);
+}
+
+function syncParentChecks() {
+  document.querySelectorAll('[data-tree-node]').forEach(node => {
+    const checkbox = node.querySelector(':scope > .tree-row input[type="checkbox"]');
+    const childChecks = [...node.querySelectorAll(':scope .tree-children input[type="checkbox"]')];
+    if (!checkbox || !childChecks.length) return;
+    const checked = childChecks.filter(input => input.checked).length;
+    checkbox.indeterminate = checked > 0 && checked < childChecks.length;
+  });
+}
+
+function syncUrl() {
+  const params = new URLSearchParams();
+  if (search.value.trim()) params.set('q', search.value.trim());
+  selectedTreeValues().forEach(value => params.append('f', value));
+  if (status?.value) params.set('estado', status.value);
+  history.replaceState(null, '', `${location.pathname}${params.toString() ? `?${params}` : ''}`);
+}
+
+function restoreUrlFilters() {
+  const params = new URLSearchParams(location.search);
+  search.value = params.get('q') || '';
+  if (status) status.value = params.get('estado') || '';
+  const filters = new Set(params.getAll('f'));
+  document.querySelectorAll('input[name="treeFilter"]').forEach(input => {
+    input.checked = filters.has(input.value);
+  });
+  syncParentChecks();
+}
+
+function optionizeStatus() {
+  const values = catalog.reduce((options, item) => {
+    const key = item.estado || 'disponible';
+    if (!options[key]) options[key] = STATUS[key] || key;
+    return options;
+  }, {});
+  status.innerHTML = '<option value="">Todos los estados</option>';
+  Object.entries(values).forEach(([key, value]) => {
+    status.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(key)}">${escapeHtml(value)}</option>`);
+  });
+}
+
+function buildFilterTree() {
+  const tree = new Map();
+  catalog.forEach(item => {
+    const typeKey = item.tipo || 'PIE';
+    const materialKey = item.material || '000';
+    const colorKey = item.color || '000';
+    if (!tree.has(typeKey)) {
+      tree.set(typeKey, { count: 0, label: labelFor(TYPE, typeKey), materials: new Map() });
+    }
+    const typeNode = tree.get(typeKey);
+    typeNode.count += 1;
+    if (!typeNode.materials.has(materialKey)) {
+      typeNode.materials.set(materialKey, { count: 0, label: labelFor(MATERIAL, materialKey, item.material_nombre), colors: new Map() });
+    }
+    const materialNode = typeNode.materials.get(materialKey);
+    materialNode.count += 1;
+    if (!materialNode.colors.has(colorKey)) {
+      materialNode.colors.set(colorKey, { count: 0, label: labelFor(COLOR, colorKey, item.color_nombre) });
+    }
+    materialNode.colors.get(colorKey).count += 1;
+  });
+
+  filterTree.innerHTML = [...tree.entries()]
+    .sort((a, b) => a[1].label.localeCompare(b[1].label, 'es'))
+    .map(([typeKey, typeNode]) => {
+      const materials = [...typeNode.materials.entries()]
+        .sort((a, b) => a[1].label.localeCompare(b[1].label, 'es'))
+        .map(([materialKey, materialNode]) => {
+          const colors = [...materialNode.colors.entries()]
+            .sort((a, b) => a[1].label.localeCompare(b[1].label, 'es'))
+            .map(([colorKey, colorNode]) => `<label class="tree-row tree-color">
+              <input type="checkbox" name="treeFilter" value="${escapeHtml(nodeValue(typeKey, materialKey, colorKey))}">
+              <span>${escapeHtml(colorNode.label)}</span><em>${colorNode.count}</em>
+            </label>`).join('');
+          return `<details data-tree-node class="tree-node tree-material">
+            <summary class="tree-row">
+              <input type="checkbox" name="treeFilter" value="${escapeHtml(nodeValue(typeKey, materialKey))}">
+              <span>${escapeHtml(materialNode.label)}</span><em>${materialNode.count}</em>
+            </summary>
+            <div class="tree-children">${colors}</div>
+          </details>`;
+        }).join('');
+      return `<details data-tree-node class="tree-node tree-type">
+        <summary class="tree-row">
+          <input type="checkbox" name="treeFilter" value="${escapeHtml(nodeValue(typeKey))}">
+          <span>${escapeHtml(typeNode.label)}</span><em>${typeNode.count}</em>
+        </summary>
+        <div class="tree-children">${materials}</div>
+      </details>`;
+    }).join('');
 }
 
 function imageStyle(item) {
@@ -48,24 +142,76 @@ function imageStyle(item) {
   return `--image-x:${safeX}%;--image-y:${safeY}%;--image-zoom:${safeZoom};`;
 }
 
+function searchText(item) {
+  return [
+    item.codigo,
+    item.referencia_csv,
+    item.idf,
+    item.nombre_comercial,
+    item.tipo,
+    TYPE[item.tipo],
+    item.material,
+    item.material_nombre,
+    item.color,
+    item.color_nombre,
+    item.estado,
+    STATUS[item.estado],
+    item.medidas,
+    item.descripcion,
+  ].join(' ').toLowerCase();
+}
+
 function render() {
   const query = search.value.trim().toLowerCase();
+  const selectedValues = selectedTreeValues();
   const rows = catalog.filter(item =>
-    (!type.value || item.tipo === type.value) &&
-    (!material.value || item.material === material.value) &&
-    (!color.value || item.color === color.value) &&
-    (!query || JSON.stringify(item).toLowerCase().includes(query))
+    matchesTree(item, selectedValues) &&
+    (!status?.value || (item.estado || 'disponible') === status.value) &&
+    (!query || searchText(item).includes(query))
   );
-  grid.innerHTML = rows.length ? rows.map(item => `<article class="card type-${item.tipo}">
-    <div class="image"><img src="${item.archivo}" alt="${escapeHtml(item.codigo)}" loading="lazy" style="${imageStyle(item)}"></div>
+  syncParentChecks();
+  syncUrl();
+  if (visibleCount) visibleCount.textContent = `${rows.length} de ${catalog.length}`;
+  grid.innerHTML = rows.length ? rows.map(item => `<article class="card type-${escapeHtml(item.tipo)}">
+    <div class="image"><img src="${escapeHtml(item.archivo)}" alt="${escapeHtml(item.codigo)}" loading="lazy" style="${imageStyle(item)}"></div>
   </article>`).join('') : `<section class="empty-state"><strong>${escapeHtml(emptyTitle)}</strong><span>${escapeHtml(emptyText)}</span></section>`;
 }
 
-[search, type, material, color].forEach(element => element.addEventListener('input', render));
+function localPublicCatalog() {
+  if (!publicStorageKey) return null;
+  try {
+    const payload = JSON.parse(localStorage.getItem(publicStorageKey) || 'null');
+    return Array.isArray(payload?.items) ? payload.items : null;
+  } catch {
+    return null;
+  }
+}
+
+search.addEventListener('input', render);
+status?.addEventListener('input', render);
+filterTree?.addEventListener('change', event => {
+  const input = event.target.closest('input[name="treeFilter"]');
+  if (!input) return;
+  const node = input.closest('[data-tree-node]');
+  node?.querySelectorAll('.tree-children input[name="treeFilter"]').forEach(child => {
+    child.checked = input.checked;
+  });
+  render();
+});
+clearFilters?.addEventListener('click', () => {
+  search.value = '';
+  if (status) status.value = '';
+  document.querySelectorAll('input[name="treeFilter"]').forEach(input => {
+    input.checked = false;
+    input.indeterminate = false;
+  });
+  render();
+});
+
 fetch(catalogUrl).then(response => response.json()).then(data => {
-  catalog = data;
-  optionize(type, filterOptions(TYPE, 'tipo', 'tipo_nombre'));
-  optionize(material, filterOptions(MATERIAL, 'material', 'material_nombre'));
-  optionize(color, filterOptions(COLOR, 'color', 'color_nombre'));
+  catalog = localPublicCatalog() || data;
+  optionizeStatus();
+  buildFilterTree();
+  restoreUrlFilters();
   render();
 });

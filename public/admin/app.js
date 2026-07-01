@@ -1,5 +1,7 @@
 const STORAGE_KEY = document.body.dataset.storageKey || 'jldv1508RenameItemsV9';
 const TABLES_KEY = document.body.dataset.tablesKey || 'jldv1508CodeTablesV1';
+const PUBLIC_STORAGE_KEY = document.body.dataset.publicStorageKey || '';
+const PUBLIC_FILE = document.body.dataset.publicFile || 'catalogo-fotos.json';
 const LEGACY_STORAGE_KEYS = (document.body.dataset.legacyStorageKeys || '').split(',').map(key => key.trim()).filter(Boolean);
 const LEGACY_TABLES_KEYS = (document.body.dataset.legacyTablesKeys || '').split(',').map(key => key.trim()).filter(Boolean);
 const BACKUP_KEY = `${STORAGE_KEY}:ultimo-respaldo`;
@@ -714,6 +716,35 @@ function backupPayload() {
 function catalogSlug() {
   return STORAGE_KEY.toLowerCase().includes('conchas') ? 'conchas' : 'bisuteria';
 }
+function publicCatalogRows() {
+  return items.map(item => ({
+    codigo: code(item),
+    referencia_csv: item.referenceCsv || item.codigoProducto || item.idf || item.original,
+    idf: item.idf || item.original,
+    archivo: String(persistedImageFor(item) || '').replace(/^\//, ''),
+    nombre_comercial: item.productName || '',
+    tipo: item.type,
+    tipo_nombre: tableLabel(tables.types, item.type),
+    material: item.material,
+    material_nombre: tableLabel(tables.materials, item.material),
+    color: item.color,
+    color_nombre: tableLabel(tables.colors, item.color),
+    piedra: item.stone || '',
+    piedra_nombre: item.stoneName || '',
+    precio_eur: normalizePrice(item.price),
+    stock: normalizeStock(item.stock),
+    medidas: item.measures || '',
+    estado: item.status || 'disponible',
+    descripcion: item.description || defaultDescription(item),
+    fotos: item.imageCount || item.fotos || 1,
+    codigo_producto: item.codigoProducto || item.referenceCsv || code(item),
+    foto_numero: item.fotoNumero || 1,
+    fotos_producto: item.fotosProducto || item.imageCount || 1,
+    image_x: imageNumber(item.imageX ?? item.image_x, 50, 0, 100),
+    image_y: imageNumber(item.imageY ?? item.image_y, 50, 0, 100),
+    image_zoom: imageNumber(item.imageZoom ?? item.image_zoom, 1, .7, 2.2),
+  }));
+}
 function editableHtml() {
   const payload = backupPayload();
   const fields = [
@@ -793,6 +824,22 @@ function parseBackupFile(text) {
 }
 document.getElementById('saveBtn').addEventListener('click', () => { save(); alert('Guardado en este navegador.'); });
 document.getElementById('csvBtn').addEventListener('click', () => { save(); download('renombrado-jldv1508.csv', toCsv(), 'text/csv'); });
+document.getElementById('publishPreviewBtn')?.addEventListener('click', () => {
+  save();
+  if (!PUBLIC_STORAGE_KEY) {
+    alert('Esta pagina no tiene configurada una clave publica.');
+    return;
+  }
+  localStorage.setItem(PUBLIC_STORAGE_KEY, JSON.stringify({
+    createdAt: new Date().toISOString(),
+    items: publicCatalogRows(),
+  }));
+  alert('Vista publica actualizada en este navegador. Abre la pagina publica para revisar los cambios.');
+});
+document.getElementById('publicJsonBtn')?.addEventListener('click', () => {
+  save();
+  download(PUBLIC_FILE, JSON.stringify(publicCatalogRows(), null, 2), 'application/json');
+});
 document.getElementById('jsonBtn').addEventListener('click', () => {
   save();
   download(`respaldo-${catalogSlug()}-jldv1508.json`, JSON.stringify(backupPayload(), null, 2), 'application/json');
