@@ -264,10 +264,14 @@ status?.addEventListener('input', render);
 filterTree?.addEventListener('change', event => {
   const input = event.target.closest('input[name="treeFilter"]');
   if (!input) return;
-  const node = input.closest('[data-tree-node]');
-  node?.querySelectorAll('.tree-children input[name="treeFilter"]').forEach(child => {
-    child.checked = input.checked;
-  });
+  if (input.checked) {
+    document.querySelectorAll('input[name="treeFilter"]').forEach(other => {
+      if (other !== input) {
+        other.checked = false;
+        other.indeterminate = false;
+      }
+    });
+  }
   render();
 });
 clearFilters?.addEventListener('click', () => {
