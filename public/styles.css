@@ -393,6 +393,16 @@ body.blog main.blog-main {
   border-radius:8px;
   box-shadow:0 18px 50px rgba(31,29,25,.12);
 }
+.public-edit-panel.is-open {
+  position:fixed;
+  top:88px;
+  left:clamp(18px,4vw,52px);
+  right:clamp(18px,4vw,52px);
+  margin:0;
+  max-height:calc(100vh - 108px);
+  overflow:auto;
+  z-index:30;
+}
 .home .public-edit-panel {
   margin-top:96px;
 }
@@ -941,6 +951,12 @@ body.blog main.blog-main {
   .public-edit-panel {
     margin:14px 16px 0;
     padding:14px;
+  }
+  .public-edit-panel.is-open {
+    top:74px;
+    left:16px;
+    right:16px;
+    max-height:calc(100vh - 90px);
   }
   .home .public-edit-panel {
     margin-top:86px;

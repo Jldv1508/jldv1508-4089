@@ -622,7 +622,6 @@ function openPanel() {
   const panel = createPanel();
   panel.classList.add('is-open');
   panel.hidden = false;
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const input = panel.querySelector('[name="user"]');
   if (input && !isUnlocked()) input.focus();
 }
