@@ -23,6 +23,7 @@ let currentRows = [];
 let originalIndexById = new Map();
 let treeFamilyFilter = '';
 let treeVariantFilter = '';
+let categoryIndex = [];
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
@@ -176,6 +177,31 @@ function variantRows(rows) {
   return [...options.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label, 'es'));
 }
 
+function buildCategoryIndex(items) {
+  const groups = new Map();
+  items.forEach(item => {
+    const variant = itemIdf(item).toLowerCase();
+    if (!variant.includes('_')) return;
+    const family = variant.split('_')[0];
+    if (!groups.has(family)) {
+      groups.set(family, { count: 0, variants: new Map() });
+    }
+    const group = groups.get(family);
+    group.count += 1;
+    group.variants.set(variant, (group.variants.get(variant) || 0) + 1);
+  });
+  return [...groups.entries()]
+    .map(([family, group]) => ({
+      family,
+      label: treeLabel(family),
+      count: group.count,
+      variants: [...group.variants.entries()]
+        .map(([variant, count]) => ({ variant, count }))
+        .sort((a, b) => a.variant.localeCompare(b.variant, 'es')),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+}
+
 function fillSelect(select, placeholder, options) {
   if (!select) return;
   const previous = select.value;
@@ -188,38 +214,27 @@ function fillSelect(select, placeholder, options) {
 
 function syncTreeFilter() {
   if (!categoryTree) return;
-  const rows = rowsForOptions('tree').filter(item => itemIdf(item).includes('_'));
-  const groups = new Map();
-  rows.forEach(item => {
-    const family = treeFamily(item);
-    const variant = treeVariant(item);
-    if (!family || !variant) return;
-    if (!groups.has(family)) {
-      groups.set(family, { count: 0, variants: new Map() });
-    }
-    const group = groups.get(family);
-    group.count += 1;
-    group.variants.set(variant, (group.variants.get(variant) || 0) + 1);
-  });
-  const sortedGroups = [...groups.entries()].sort((a, b) => treeLabel(a[0]).localeCompare(treeLabel(b[0]), 'es'));
-  if (!sortedGroups.length) {
+  if (!categoryIndex.length) {
     categoryTree.innerHTML = '';
     return;
   }
   categoryTree.innerHTML = `<details class="tree-node tree-material" open>
     <summary>Subcategorías con _</summary>
     <div class="tree-children">
-      ${sortedGroups.map(([family, group]) => `<details class="tree-node tree-material" open>
-        <summary>${escapeHtml(treeLabel(family))} <em>(${group.count})</em></summary>
+      ${categoryIndex.map(({ family, label, count, variants }) => {
+        const isOpen = treeFamilyFilter === family || treeVariantFilter.startsWith(`${family}_`);
+        return `<details class="tree-node tree-material"${isOpen ? ' open' : ''}>
+        <summary>${escapeHtml(label)} <em>(${count})</em></summary>
         <div class="tree-children">
           <button class="tree-select${treeFamilyFilter === family ? ' active' : ''}" type="button" data-family="${escapeAttr(family)}">
-            <span>Ver todas</span><em>${group.count}</em>
+            <span>Ver todas</span><em>${count}</em>
           </button>
-          ${[...group.variants.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).map(([variant, count]) => `<button class="tree-select${treeVariantFilter === variant ? ' active' : ''}" type="button" data-variant="${escapeAttr(variant)}" data-family="${escapeAttr(family)}">
+          ${variants.map(({ variant, count }) => `<button class="tree-select${treeVariantFilter === variant ? ' active' : ''}" type="button" data-variant="${escapeAttr(variant)}" data-family="${escapeAttr(family)}">
             <span>${escapeHtml(variant)}</span><em>${count}</em>
           </button>`).join('')}
         </div>
-      </details>`).join('')}
+      </details>`;
+      }).join('')}
     </div>
   </details>`;
 }
@@ -427,6 +442,7 @@ document.addEventListener('keydown', event => {
 fetch(catalogUrl).then(response => response.json()).then(data => {
   catalog = localPublicCatalog() || data;
   originalIndexById = new Map(catalog.map((item, index) => [item.codigo || item.archivo || item.referencia_csv || `${index}`, index]));
+  categoryIndex = buildCategoryIndex(catalog);
   syncSmartFilters();
   restoreUrlFilters();
   render();
