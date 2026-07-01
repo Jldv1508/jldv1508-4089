@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bisutería · jldv1508</title>
-  <link rel="stylesheet" href="styles.css?v=20260701-home-pro">
+  <link rel="stylesheet" href="styles.css?v=20260701-smart-dropdown">
 </head>
 <body data-catalog-title="Catálogo de bisutería" data-catalog-url="catalogo-fotos.json?v=781-20260630" data-public-storage-key="jldv1508PublicCatalogBisuteriaV1" data-empty-title="Catálogo en blanco" data-empty-text="Estamos preparando una nueva selección de piezas.">
   <header>
@@ -23,12 +23,25 @@
     <aside class="filter-panel">
       <div class="filter-panel-head">
         <strong>Filtros</strong>
-        <span>Tipo > material > color</span>
+        <span>Desplegables inteligentes</span>
       </div>
-      <div id="filterTree" class="filter-tree" aria-label="Filtros por árbol"></div>
+      <div id="smartFilters" class="smart-filters" aria-label="Filtros inteligentes">
+        <label>
+          <span>Tipo</span>
+          <select id="typeFilter"><option value="">Todos los tipos</option></select>
+        </label>
+        <label>
+          <span>Material</span>
+          <select id="materialFilter"><option value="">Todos los materiales</option></select>
+        </label>
+        <label>
+          <span>Color</span>
+          <select id="colorFilter"><option value="">Todos los colores</option></select>
+        </label>
+      </div>
     </aside>
     <main id="grid"></main>
   </div>
-  <script src="app.js?v=20260701-home-pro"></script>
+  <script src="app.js?v=20260701-smart-dropdown"></script>
 </body>
 </html>
